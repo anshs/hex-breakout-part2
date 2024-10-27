@@ -1,30 +1,30 @@
 import { Ball } from './ball.js';  
+import { Hex } from './hexagon.js';  
+
 var cvs;
 var ctx;
 var d = 20; // Default hexagon radius
 var n = 5;  // Default number of hexagons
-const gridAxial = Array.from({ length: 2 * n + 1 }, () => Array(2 * n + 1).fill(null));; //Store grid coordinates in axial coordinate system
-const gridCartesian = Array.from({ length: 2 * n + 1 }, () => Array(2 * n + 1).fill(null));; //Store grid coordinates in cartesian coordinate system
+const hexGrid = Array.from({ length: 2 * n + 1 }, () => Array(2 * n + 1).fill(null));; //Store grid coordinates in axial coordinate system
 var balls = [];
 
 // Flags
-var showGrid = 1; // Flag to show or hide grid. 0 = Off, 1 = Cartesian, 2 = Axial
-
+var showCoord = 2; // Flag to show or hide axial coordinates. 0 = Off, 1 = Cartesian, 2 = Axial
+var showBorder = 1; // Flag to show border around hexagons. 1 = show border, 0 = hide border
 
 document.addEventListener('DOMContentLoaded', function() {
     cvs = document.getElementById('hexbreakout');
     ctx = cvs.getContext('2d');
 
-    // initialize ball
-    // Ball properties
+    // initialize balls
     balls = [
         new Ball(cvs.width / 2, cvs.height / 2, 5, 2, 3),
         new Ball(cvs.width / 3, cvs.height / 3, 5, -2, 2),
     ];
 
     // Call the function initially and whenever the window is resized
+    initHexGrid();
     resizeCanvas();
-    initHexPattern();
     updateCanvas();
     // Start animation
     animate();
@@ -52,9 +52,13 @@ function updateCanvas() {
     ctx.translate(cvs.width / 2, cvs.height / 2);
 
     // Redraw the hexagonal grid
-    fillHexPattern(d, 0, 0);
+    hexGrid.forEach(row => {
+        row.forEach(hex => {
+            hex.draw(ctx);
+        });
+    });
     balls.forEach(ball => {
-        ball.update(cvs,ctx, gridCartesian);
+        ball.update(cvs,ctx);
         ball.draw(ctx);
     });
 
@@ -63,51 +67,31 @@ function updateCanvas() {
 }
 
 // Initialize Hex Pattern
-function initHexPattern() {
+function initHexGrid() {
     let q, r, x, y;
     for (q = -n; q <= n; q++) {
         for (r = -n; r <= n; r++) {
             [x, y] = hexToCart([q, r], d);
-            gridCartesian[q+n][r+n] = {x,y}; // Store cartesian coordinates of the hexagon grid (centers of hexagons)
-
+            hexGrid[q+n][r+n] = new Hex({q,r},{x,y},null,d,null,showBorder);
+            hexGrid[q+n][r+n].showCoord = showCoord;
             if (Math.max(Math.abs(q), Math.abs(r), Math.abs(-q - r)) < n) {
                 // Set initial hex color: 0=black, 1=white. Splitting the hex pattern in half
                 if(q<0){
-                    gridAxial[q + n][r + n] = 1;
+                    hexGrid[q + n][r + n].yingyang = 1;
                 } 
                 else if (q>0){
-                    gridAxial[q + n][r + n] = 0;
+                    hexGrid[q + n][r + n].yingyang = 0;
                 }
                 else if (q==0){
-                    (r%2==0) ? gridAxial[q + n][r + n] = 0 : gridAxial[q + n][r + n] = 1; // Center row of hexagons split evenly based on even and odd coordinates
+                    (r%2==0) ? hexGrid[q + n][r + n].yingyang = 0 : hexGrid[q + n][r + n].yingyang = 1; // Center row of hexagons split evenly based on even and odd coordinates
                 }
                 else {
-                    gridAxial[q + n][r + n] = null;
+                    hexGrid[q + n][r + n].yingyang = null;
                 }
             }
         }
     }
-}
-
-// Function to tile the entire canvas using 
-function fillHexPattern(d, xoffset, yoffset) {
-    let q, r, x, y;
-    for (q = -n; q <= n; q++) {
-        for (r = -n; r <= n; r++) {
-            if (gridAxial[q+n][r+n] != null) {       
-                [x, y] = hexToCart([q, r], d);
-                drawHex(x + xoffset, y + yoffset, d, gridAxial[q+n][r+n]);
-                if(showGrid){
-                    ctx.save();
-                    ctx.textAlign = "center";
-                    gridAxial[q+n][r+n]==1?ctx.fillStyle = "black": ctx.fillStyle = "white";
-                    ctx.fillText("(" + q + "," + r + ")", x, y);
-                    ctx.restore();
-                }
-
-            }
-        }
-    }
+    console.log(hexGrid);
 }
 
 // Transform Axial coordinates into cartesian coordinates of unit size d (1 unit is a hexagon of radius d)
@@ -117,21 +101,6 @@ function hexToCart(h, d) {
     return [x, y];
 }
 
-// Draw a single hexagon at the coordinates (x,y) and of size r
-function drawHex(x, y, r, col) {
-    ctx.save();
-    ctx.beginPath();
-    for (let i = 0; i < 6; i++) {
-        let angle = (Math.PI / 3) * i;
-        ctx.lineTo(x + r * Math.cos(angle), y + r * Math.sin(angle));
-    }
-    ctx.closePath();
-    col == 1? ctx.strokeStyle = "black": ctx.strokeStyle = "white";
-    col == 1? ctx.fillStyle = "white": ctx.fillStyle = "black";
-    ctx.stroke();
-    ctx.fill();
-    ctx.restore();
-}
 
 
 // Function to resize the canvas based on window width

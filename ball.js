@@ -17,7 +17,7 @@ export class Ball {
         ctx.closePath();
     }
 
-    update(cvs, ctx, hexGrid) {
+    update(cvs, ctx) {
         // Update position
         this.x += this.dx;
         this.y += this.dy;
