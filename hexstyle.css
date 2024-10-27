@@ -1,0 +1,15 @@
+body {
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+#hexbreakout {
+    border: 1px solid black;
+}
+/* Limit the width of the canvas to 640px on larger screens */
+@media (min-width: 640px) {
+    #hexbreakout {
+      max-width: 640px;
+    }
+  }
+  
